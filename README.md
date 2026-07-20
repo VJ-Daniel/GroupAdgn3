@@ -1,31 +1,51 @@
-# Elo's Jungle Journey
+# Elsa's Crystal Quest
 
 ## Character Creation
 
 ### Theme
-**Jungle**
+**Fantasy Medieval**
 
 ### Character Name
-**Elo**
+**Elsa**
 
 ### Character Role
-Elo is the main playable character in a 2D side-scrolling jungle adventure. Players guide Elo through dangerous jungle environments while avoiding obstacles such as rolling logs, hostile creatures, deep pits, and sharp spikes. Along the way, players can collect coins before reaching the end of each level.
+Elsa is the main playable character in a 2D side-scrolling fantasy adventure. Players guide Elsa through enchanted forest levels while avoiding obstacles such as spikes, deep pits, hostile creatures, and rolling logs. Along the journey, players can collect coins before reaching the crystal at the end of each level.
 
 ### Character Appearance
-Elo is a small monkey with brown fur, a light tan face and belly, large expressive eyes, and an agile build suited for navigating the jungle.
+Elsa is a young knight with dark blue hair, equipped with a sturdy shield, a sharp sword, and polished medieval armor. Her appearance reflects both courage and determination as she protects her homeland.
 
 ### Character Abilities
+
 - **Jump** – Perform both a standard jump and a double jump to clear gaps, platforms, and dangerous obstacles.
-- **Dash** – Execute a quick horizontal burst of speed to smash through weak obstacles or cross wider gaps safely.
+- **Dash** – Execute a quick horizontal burst of speed to avoid danger, break through weak obstacles, or cross larger gaps.
 
 ---
 
 # Background Narrative
 
-Elo is a young monkey who lives high above the jungle floor in a giant ancient tree. Hidden beside his home is his most treasured possession—a collection of magical golden bananas gathered over many years. These rare bananas symbolize his achievements, courage, and dedication, making them far more valuable than ordinary fruit.
+Elsa is a young knight from a peaceful forest village whose prosperity depends on magical crystals. These rare crystals are a powerful natural resource that provide energy to homes, enrich farmland, and serve as the village's primary form of currency. Having trained her entire life as a guardian, Elsa is entrusted with protecting the village's precious crystal reserve from any threat that may arise.
 
-One peaceful night, while Elo slept, a massive hurricane swept through the jungle. The powerful winds tore branches from trees, flooded rivers, and scattered his precious golden bananas across the wilderness. When the storm finally passed, Elo awoke to find his home damaged and his treasured collection missing. Determined to recover what was lost, he set out on a journey through the dangerous jungle.
+One night, a powerful hurricane tears through the forest, destroying homes and scattering the village's crystal stash across the surrounding wilderness. By morning, the once-thriving village is left in chaos. Without the crystals, daily life comes to a halt, crops begin to fail, and the villagers fear for their future. As the only young knight capable of taking on the dangerous journey ahead, Elsa volunteers to recover every lost crystal.
 
-As Elo travels from one area to the next, he must overcome rolling logs, hostile jungle creatures, deep pits, sharp spikes, and other natural hazards. Using his quick reflexes, double jump, and dash abilities, he navigates each challenge while collecting optional coins hidden throughout every level.
+Her adventure leads her deep into mysterious forests filled with dangerous creatures, rolling logs, hidden pits, and deadly spikes. Using her exceptional agility, Elsa can perform double jumps to reach elevated platforms and dash across wide gaps or escape dangerous situations. Along the way, she can also collect coins scattered throughout each level to increase her score.
 
-The objective of the game is to guide Elo safely through each stage, survive the many obstacles, and reach the golden banana waiting at the end of every level. Each recovered banana brings Elo one step closer to rebuilding his treasured collection. Once every golden banana has been found, Elo restores both his collection and his pride, proving that determination and courage can overcome even the greatest storms.
+The objective of the game is to safely guide Elsa through every level, overcome the many obstacles in her path, and recover the magical crystal waiting at the end of each stage. Every crystal returned brings new hope to the village. Once all the lost crystals have been recovered, the village is restored to its former prosperity, and Elsa fulfills her duty as the guardian who saved her people.
+
+---
+
+# World Setting
+
+The game takes place in an enchanted medieval forest filled with towering trees, ancient ruins, wooden bridges, rocky cliffs, and hidden pathways. Although the environment appears peaceful, it is filled with dangerous hazards and creatures that stand between Elsa and the lost crystals. Each level introduces new platforming challenges while maintaining the fantasy atmosphere through lush scenery, medieval architecture, and mystical elements.
+
+---
+
+# Controls
+
+| Key | Action |
+|------|--------|
+| **A / Left Arrow** | Move Left |
+| **D / Right Arrow** | Move Right |
+| **Space** | Jump / Double Jump |
+| **Left Shift** | Dash |
+
+---
