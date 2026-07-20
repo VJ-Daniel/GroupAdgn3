@@ -1,4 +1,3 @@
-```md
 # Elo's Jungle Journey
 
 ## Character Creation
@@ -30,4 +29,3 @@ One peaceful night, while Elo slept, a massive hurricane swept through the jungl
 As Elo travels from one area to the next, he must overcome rolling logs, hostile jungle creatures, deep pits, sharp spikes, and other natural hazards. Using his quick reflexes, double jump, and dash abilities, he navigates each challenge while collecting optional coins hidden throughout every level.
 
 The objective of the game is to guide Elo safely through each stage, survive the many obstacles, and reach the golden banana waiting at the end of every level. Each recovered banana brings Elo one step closer to rebuilding his treasured collection. Once every golden banana has been found, Elo restores both his collection and his pride, proving that determination and courage can overcome even the greatest storms.
-```
