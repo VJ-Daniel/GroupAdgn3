@@ -1,52 +1,35 @@
 /*
     ============================================================
-    FPS Explorer - OpenGL
-
-    Author: Leonardo Moura
-    Date: 2026
+    Elsa's Crystal Quest - OpenGL 2D Platformer
 
     Description:
 
-    This application implements a first-person 3D exploration
-    environment using modern OpenGL.
+    A 2D side-scrolling fantasy platform game in which the player
+    controls Elsa, a young knight searching for magical crystals
+    scattered throughout an enchanted forest.
 
     The project demonstrates:
 
-        • OpenGL initialization
-        • Window and context creation
-        • Shader management
-        • Game loop architecture
-        • Delta time based updates
-        • First Person Camera (FPS)
-        • Perspective Projection
-        • View Matrix generation
-        • Mouse Look controls
-        • Sprint movement
-        • Gravity simulation
-        • Jump mechanics
-        • Collision detection
-        • Open world navigation
-        • Interactive castle door system
-        • Basic world rendering
+        - OpenGL initialization
+        - Window and context creation
+        - Shader management
+        - Texture and sprite rendering
+        - Animated sprites
+        - Delta-time-based movement
+        - Player input
+        - Jump and double-jump mechanics
+        - Dash mechanics
+        - Collision detection
+        - Side-scrolling world rendering
 
     Technologies:
 
-        • OpenGL 3.3 Core Profile
-        • GLFW
-        • GLEW
-        • GLM
-        • C++
-
-    Learning Topics:
-
-        • Coordinate Systems
-        • Model Matrices
-        • View Matrices
-        • Projection Matrices
-        • Camera Systems
-        • Real-Time Rendering
-        • Input Processing
-        • Physics Fundamentals
+        - OpenGL 3.3 Core Profile
+        - GLFW
+        - GLEW
+        - GLM
+        - stb_image
+        - C++
 
     ============================================================
 */
@@ -59,50 +42,87 @@
 #include "Shader.h"
 #include "Game.h"
 
-//--------------------------------------------------
-// Fixed application resolution.
-//
-// The entire world is rendered using
-// a 1280x720 viewport.
-//--------------------------------------------------
+// ------------------------------------------------------------
+// Window settings
+// ------------------------------------------------------------
 
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 720;
 
+constexpr const char* WINDOW_TITLE =
+"Elsa's Crystal Quest";
+
+// ------------------------------------------------------------
+// Called whenever the window is resized.
+//
+// The OpenGL viewport must be updated so rendering continues
+// to use the full drawable area of the window.
+// ------------------------------------------------------------
+
+void FramebufferSizeCallback(
+    GLFWwindow* window,
+    int width,
+    int height)
+{
+    glViewport(
+        0,
+        0,
+        width,
+        height);
+}
+
+// ------------------------------------------------------------
+// Print GLFW errors to the console.
+// ------------------------------------------------------------
+
+void GLFWErrorCallback(
+    int errorCode,
+    const char* description)
+{
+    std::cerr
+        << "GLFW Error "
+        << errorCode
+        << ": "
+        << description
+        << std::endl;
+}
+
+// ------------------------------------------------------------
+// Program entry point
+// ------------------------------------------------------------
+
 int main()
 {
-    //--------------------------------------------------
+    // --------------------------------------------------------
+    // Set the GLFW error callback before initialization.
+    // --------------------------------------------------------
+
+    glfwSetErrorCallback(
+        GLFWErrorCallback);
+
+    // --------------------------------------------------------
     // Initialize GLFW.
     //
-    // GLFW is responsible for:
+    // GLFW handles:
     //
-    //  • Window creation
-    //  • OpenGL context creation
-    //  • Keyboard input
-    //  • Mouse input
-    //  • Event processing
-    //--------------------------------------------------
+    // - Window creation
+    // - OpenGL context creation
+    // - Keyboard input
+    // - Window events
+    // --------------------------------------------------------
 
     if (!glfwInit())
     {
-        std::cout
-            << "Failed to initialize GLFW"
+        std::cerr
+            << "Failed to initialize GLFW."
             << std::endl;
 
         return -1;
     }
 
-    //--------------------------------------------------
-    // Configure OpenGL.
-    //
-    // Using:
-    //
-    //      OpenGL 3.3 Core Profile
-    //
-    // Core Profile removes legacy
-    // functionality and enforces
-    // modern OpenGL practices.
-    //--------------------------------------------------
+    // --------------------------------------------------------
+    // Request OpenGL 3.3 Core Profile.
+    // --------------------------------------------------------
 
     glfwWindowHint(
         GLFW_CONTEXT_VERSION_MAJOR,
@@ -116,34 +136,22 @@ int main()
         GLFW_OPENGL_PROFILE,
         GLFW_OPENGL_CORE_PROFILE);
 
-    //--------------------------------------------------
-    // Create application window.
-    //
-    // Parameters:
-    //
-    //  Width
-    //  Height
-    //  Window Title
-    //  Monitor
-    //  Shared Context
-    //--------------------------------------------------
+    // --------------------------------------------------------
+    // Create the game window.
+    // --------------------------------------------------------
 
     GLFWwindow* window =
         glfwCreateWindow(
             WINDOW_WIDTH,
             WINDOW_HEIGHT,
-            "FPS Explorer",
+            WINDOW_TITLE,
             nullptr,
             nullptr);
 
-    //--------------------------------------------------
-    // Verify successful window creation.
-    //--------------------------------------------------
-
     if (!window)
     {
-        std::cout
-            << "Failed to create window"
+        std::cerr
+            << "Failed to create the GLFW window."
             << std::endl;
 
         glfwTerminate();
@@ -151,46 +159,48 @@ int main()
         return -1;
     }
 
-    //--------------------------------------------------
-    // Make this window's OpenGL context
-    // the active context.
-    //--------------------------------------------------
+    // --------------------------------------------------------
+    // Make the new window's OpenGL context active.
+    // --------------------------------------------------------
 
     glfwMakeContextCurrent(
         window);
 
-    //--------------------------------------------------
+    // --------------------------------------------------------
+    // Enable vertical synchronization.
+    //
+    // This usually limits the game to the monitor refresh rate
+    // and helps prevent screen tearing.
+    // --------------------------------------------------------
+
+    glfwSwapInterval(1);
+
+    // --------------------------------------------------------
+    // Register the window resize callback.
+    // --------------------------------------------------------
+
+    glfwSetFramebufferSizeCallback(
+        window,
+        FramebufferSizeCallback);
+
+    // --------------------------------------------------------
     // Initialize GLEW.
     //
-    // GLEW loads modern OpenGL functions.
-    //
-    // Examples:
-    //
-    //      glCreateShader()
-    //      glCreateProgram()
-    //      glGenVertexArrays()
-    //      glBindVertexArray()
-    //
-    // Without GLEW these functions
-    // would not be available.
-    //--------------------------------------------------
+    // GLEW loads the modern OpenGL functions required by the
+    // game, including shaders, vertex buffers, and textures.
+    // --------------------------------------------------------
 
-    glewExperimental =
-        GL_TRUE;
+    glewExperimental = GL_TRUE;
 
-    GLenum result =
+    const GLenum glewResult =
         glewInit();
 
-    //--------------------------------------------------
-    // Verify successful GLEW initialization.
-    //--------------------------------------------------
-
-    if (result != GLEW_OK)
+    if (glewResult != GLEW_OK)
     {
-        std::cout
-            << "GLEW ERROR: "
+        std::cerr
+            << "Failed to initialize GLEW: "
             << glewGetErrorString(
-                result)
+                glewResult)
             << std::endl;
 
         glfwDestroyWindow(
@@ -201,23 +211,16 @@ int main()
         return -1;
     }
 
-    //--------------------------------------------------
-    // Configure OpenGL rendering state.
-    //
-    // Viewport:
-    // Defines the drawable area.
-    //
-    // Depth Testing:
-    // Ensures closer objects appear
-    // in front of distant objects.
-    //
-    // Required for rendering:
-    //
-    //  • Terrain
-    //  • Trees
-    //  • Castle
-    //  • Door
-    //--------------------------------------------------
+    // --------------------------------------------------------
+    // GLEW may generate an unnecessary OpenGL error during
+    // initialization. Clear it before continuing.
+    // --------------------------------------------------------
+
+    glGetError();
+
+    // --------------------------------------------------------
+    // Configure the initial viewport.
+    // --------------------------------------------------------
 
     glViewport(
         0,
@@ -225,60 +228,80 @@ int main()
         WINDOW_WIDTH,
         WINDOW_HEIGHT);
 
+    // --------------------------------------------------------
+    // Enable alpha blending.
+    //
+    // This is required for transparent PNG sprites, including
+    // Elsa's animation frames and environmental objects.
+    // --------------------------------------------------------
+
     glEnable(
+        GL_BLEND);
+
+    glBlendFunc(
+        GL_SRC_ALPHA,
+        GL_ONE_MINUS_SRC_ALPHA);
+
+    // --------------------------------------------------------
+    // Disable depth testing for the basic 2D renderer.
+    //
+    // Sprites will be drawn in the order that Render() calls
+    // them:
+    //
+    // 1. Background
+    // 2. Platforms and scenery
+    // 3. Collectibles and obstacles
+    // 4. Player
+    // --------------------------------------------------------
+
+    glDisable(
         GL_DEPTH_TEST);
 
-    //--------------------------------------------------
-    // Load and compile shader program.
+    // --------------------------------------------------------
+    // Load the sprite shader.
     //
-    // Vertex Shader:
-    // Transforms vertices through the
-    // rendering pipeline.
-    //
-    // Fragment Shader:
-    // Computes the final pixel color.
-    //--------------------------------------------------
+    // Adjust these paths to match the actual location of your
+    // shader files.
+    // --------------------------------------------------------
 
     Shader shader(
-        "Src/Shaders/vertex.glsl",
-        "Src/Shaders/fragment.glsl");
+        "Src/Assets/Shaders/vertex.glsl",
+        "Src/Assets/Shaders/fragment.glsl");
 
-    //--------------------------------------------------
-    // Create main game controller.
+    Shader spriteShader(
+        "Src/Assets/Shaders/sprite.vert",
+        "Src/Assets/Shaders/sprite.frag");
+
+    // --------------------------------------------------------
+    // Create the main Game controller.
     //
-    // The Game class manages:
+    // The Game class will eventually manage:
     //
-    //  • World generation
-    //  • Camera system
-    //  • Input processing
-    //  • Physics simulation
-    //  • Collision detection
-    //  • Rendering pipeline
-    //  • Interactive objects
-    //--------------------------------------------------
+    // - Player movement
+    // - Sprite animation
+    // - Texture loading
+    // - World rendering
+    // - Obstacles
+    // - Collision detection
+    // - Coins
+    // - Crystals
+    // - Side-scrolling camera
+    // --------------------------------------------------------
 
     Game game(
         window,
         WINDOW_WIDTH,
         WINDOW_HEIGHT);
 
-    //--------------------------------------------------
-    // Initialize all game systems.
-    //
-    // Includes:
-    //
-    //  • Renderer initialization
-    //  • Camera setup
-    //  • World generation
-    //  • Object creation
-    //  • Shader configuration
-    //--------------------------------------------------
+    // --------------------------------------------------------
+    // Initialize the game systems.
+    // --------------------------------------------------------
 
     if (!game.Initialize(
-        &shader))
+        &spriteShader))
     {
-        std::cout
-            << "Failed to initialize game"
+        std::cerr
+            << "Failed to initialize the game."
             << std::endl;
 
         glfwDestroyWindow(
@@ -289,184 +312,147 @@ int main()
         return -1;
     }
 
-    //--------------------------------------------------
-    // Store initial timestamp.
+    // --------------------------------------------------------
+    // Store the time of the previous frame.
     //
-    // Used for delta time calculations.
-    //
-    // Delta time allows movement and
-    // simulation to remain independent
-    // of frame rate.
-    //--------------------------------------------------
+    // Delta time ensures that movement speed does not depend
+    // on the computer's frame rate.
+    // --------------------------------------------------------
 
-    float lastTime =
+    float lastFrameTime =
         static_cast<float>(
             glfwGetTime());
 
-    //--------------------------------------------------
-    // Main Application Loop.
-    //
-    // Every frame performs:
-    //
-    //  1. Process Input
-    //  2. Update World
-    //  3. Render Scene
-    //  4. Present Frame
-    //
-    // This architecture is used by
-    // most commercial game engines.
-    //--------------------------------------------------
+    // --------------------------------------------------------
+    // Main game loop
+    // --------------------------------------------------------
 
-    while (
-        !glfwWindowShouldClose(
-            window))
+    while (!glfwWindowShouldClose(
+        window))
     {
-        //--------------------------------------------------
-        // Current frame time.
-        //--------------------------------------------------
+        // ----------------------------------------------------
+        // Calculate delta time.
+        // ----------------------------------------------------
 
-        float currentTime =
+        const float currentFrameTime =
             static_cast<float>(
                 glfwGetTime());
 
-        //--------------------------------------------------
-        // Compute delta time.
-        //
-        // Delta Time =
-        //
-        // Current Time
-        //      -
-        // Previous Time
-        //
-        // Produces frame-rate independent
-        // movement and physics.
-        //--------------------------------------------------
-
         float deltaTime =
-            currentTime -
-            lastTime;
+            currentFrameTime -
+            lastFrameTime;
 
-        lastTime =
-            currentTime;
+        lastFrameTime =
+            currentFrameTime;
 
-        //--------------------------------------------------
-        // Allow application exit.
+        // ----------------------------------------------------
+        // Prevent unusually large frame times.
         //
-        // ESC closes the application.
-        //--------------------------------------------------
+        // This can happen when debugging or dragging the game
+        // window. Without a limit, the player could suddenly
+        // move a large distance in one frame.
+        // ----------------------------------------------------
 
-        if (
-            glfwGetKey(
-                window,
-                GLFW_KEY_ESCAPE)
-            ==
-            GLFW_PRESS)
+        constexpr float MAX_DELTA_TIME =
+            0.05f;
+
+        if (deltaTime > MAX_DELTA_TIME)
+        {
+            deltaTime =
+                MAX_DELTA_TIME;
+        }
+
+        // ----------------------------------------------------
+        // Allow the player to close the application with ESC.
+        // ----------------------------------------------------
+
+        if (glfwGetKey(
+            window,
+            GLFW_KEY_ESCAPE)
+            == GLFW_PRESS)
         {
             glfwSetWindowShouldClose(
                 window,
                 GLFW_TRUE);
         }
 
-        //--------------------------------------------------
-        // Process user input.
+        // ----------------------------------------------------
+        // Process player input.
         //
-        // Examples:
+        // This will eventually handle:
         //
-        //  • WASD movement
-        //  • Mouse look
-        //  • Sprint
-        //  • Jump
-        //  • Door interaction
-        //--------------------------------------------------
+        // - A / D movement
+        // - Left / Right arrow movement
+        // - Jump
+        // - Double jump
+        // - Dash
+        // ----------------------------------------------------
 
         game.ProcessInput(
             deltaTime);
 
-        //--------------------------------------------------
-        // Update game systems.
+        // ----------------------------------------------------
+        // Update the game.
         //
-        // Includes:
+        // This will eventually update:
         //
-        //  • Camera update
-        //  • Physics update
-        //  • Gravity
-        //  • Collision detection
-        //  • Object animation
-        //--------------------------------------------------
+        // - Player position
+        // - Gravity
+        // - Jumping
+        // - Dash timing
+        // - Sprite animations
+        // - Collision detection
+        // - Camera movement
+        // - Coins and crystals
+        // ----------------------------------------------------
 
         game.Update(
             deltaTime);
 
-        //--------------------------------------------------
-        // Render current frame.
+        // ----------------------------------------------------
+        // Render the current frame.
         //
-        // Draws:
+        // The recommended rendering order is:
         //
-        //  • Terrain
-        //  • Trees
-        //  • Castle
-        //  • Door
-        //  • World geometry
-        //
-        // Rendering uses:
-        //
-        //      Model Matrix
-        //              ↓
-        //      View Matrix
-        //              ↓
-        //   Projection Matrix
-        //--------------------------------------------------
+        // 1. Background
+        // 2. World tiles and platforms
+        // 3. Obstacles
+        // 4. Coins and crystals
+        // 5. Enemies
+        // 6. Elsa
+        // 7. User interface
+        // ----------------------------------------------------
 
         game.Render();
 
-        //--------------------------------------------------
-        // Present rendered image.
-        //
-        // Double buffering prevents
-        // flickering and tearing.
-        //--------------------------------------------------
+        // ----------------------------------------------------
+        // Present the completed frame.
+        // ----------------------------------------------------
 
         glfwSwapBuffers(
             window);
 
-        //--------------------------------------------------
-        // Process operating system events.
-        //
-        // Examples:
-        //
-        //  • Keyboard input
-        //  • Mouse movement
-        //  • Window events
-        //  • Close requests
-        //--------------------------------------------------
+        // ----------------------------------------------------
+        // Process keyboard and window events.
+        // ----------------------------------------------------
 
         glfwPollEvents();
     }
 
-    //--------------------------------------------------
-    // Shutdown game systems.
-    //
-    // Release all allocated resources.
-    //--------------------------------------------------
+    // --------------------------------------------------------
+    // Release game resources.
+    // --------------------------------------------------------
 
     game.Shutdown();
 
-    //--------------------------------------------------
-    // Destroy application window.
-    //--------------------------------------------------
+    // --------------------------------------------------------
+    // Destroy the window and shut down GLFW.
+    // --------------------------------------------------------
 
     glfwDestroyWindow(
         window);
 
-    //--------------------------------------------------
-    // Shutdown GLFW.
-    //--------------------------------------------------
-
     glfwTerminate();
-
-    //--------------------------------------------------
-    // Exit successfully.
-    //--------------------------------------------------
 
     return 0;
 }

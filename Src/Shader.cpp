@@ -1,6 +1,7 @@
 #include "Shader.h"
 
-#include <glew.h>
+#include <glew.h>        
+#include <gtc/type_ptr.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -191,6 +192,16 @@ Shader::Shader(
 
     glDeleteShader(
         fragmentShader);
+}
+
+void Shader::SetMat4(const std::string& name,
+    const glm::mat4& matrix)
+{
+    glUniformMatrix4fv(
+        glGetUniformLocation(programID, name.c_str()),
+        1,
+        GL_FALSE,
+        glm::value_ptr(matrix));
 }
 
 //--------------------------------------------------

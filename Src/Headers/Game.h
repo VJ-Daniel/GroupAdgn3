@@ -3,11 +3,23 @@
 
 #include <glew.h>
 #include <glfw3.h>
+#include <vector>
 
-#include "Camera.h"
-#include "World.h"
-#include "Renderer.h"
 #include "Shader.h"
+#include "SpriteRenderer.h"
+#include "Texture.h"
+#include "Player.h"
+
+struct WorldSprite
+{
+    Texture* texture;
+
+    glm::vec2 position;
+    glm::vec2 size;
+
+    glm::vec2 uvOffset;
+    glm::vec2 uvScale;
+};
 
 class Game
 {
@@ -27,56 +39,28 @@ private:
     // Systems
     //--------------------------------------------------
 
-    Renderer renderer;
+    SpriteRenderer spriteRenderer;
 
-    World world;
+    Texture backgroundTexture;
 
-    Camera camera;
+    Texture playerTexture;
 
-    //--------------------------------------------------
-    // Mouse
-    //--------------------------------------------------
+    Texture tilesetTexture;     // Platforms
+    Texture objectsTexture;     // Trees, chest, bushes, etc.
+    Texture spikesTexture;      // Spikes
+    Texture predatorTexture;    // Animated plant
 
-    bool firstMouse;
+    Player player;
 
-    float lastMouseX;
-
-    float lastMouseY;
+    std::vector<WorldSprite> worldSprites;
 
 private:
-
-    //--------------------------------------------------
-    // Initialization
-    //--------------------------------------------------
-
-    void InitializeCamera();
-
-    void InitializeWorld();
 
     //--------------------------------------------------
     // Input
     //--------------------------------------------------
 
     void HandleKeyboardInput(
-        float deltaTime);
-
-    void HandleMouseInput();
-
-    void HandleJumpInput();
-
-    void HandleDoorInteraction();
-
-    //--------------------------------------------------
-    // Physics
-    //--------------------------------------------------
-
-    void UpdatePhysics(
-        float deltaTime);
-
-    void UpdateCamera(
-        float deltaTime);
-
-    void UpdateWorld(
         float deltaTime);
 
 public:
@@ -114,16 +98,6 @@ public:
     //--------------------------------------------------
 
     void Shutdown();
-
-    //--------------------------------------------------
-    // Accessors
-    //--------------------------------------------------
-
-    Camera& GetCamera();
-
-    World& GetWorld();
-
-    Renderer& GetRenderer();
 
     //--------------------------------------------------
     // Destructor

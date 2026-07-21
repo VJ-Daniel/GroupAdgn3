@@ -2,412 +2,267 @@
 #include "Game.h"
 
 #include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>   
+
+glm::vec4 PixelRegionToUV(
+    float x,
+    float y,
+    float width,
+    float height,
+    float textureWidth,
+    float textureHeight)
+{
+    float uOffset = x / textureWidth;
+    float vOffset = y / textureHeight;
+
+    float uScale = width / textureWidth;
+    float vScale = height / textureHeight;
+
+    return glm::vec4(
+        uOffset,
+        vOffset,
+        uScale,
+        vScale
+    );
+}
 
 Game::Game(
     GLFWwindow* gameWindow,
     int width,
     int height)
-{
-    //--------------------------------------------------
-    // Window
-    //--------------------------------------------------
-
-    window =
-        gameWindow;
-
-    screenWidth =
-        width;
-
-    screenHeight =
-        height;
-
-    //--------------------------------------------------
-    // Mouse
-    //--------------------------------------------------
-
-    firstMouse =
-        true;
-
-    lastMouseX =
-        static_cast<float>(
-            width) * 0.5f;
-
-    lastMouseY =
-        static_cast<float>(
-            height) * 0.5f;
-}
+    : window(gameWindow),
+    screenWidth(width),
+    screenHeight(height),
+    player(
+        glm::vec2(100.0f, 500.0f),
+        glm::vec2(200.0f, 128.0f),
+        250.0f
+    )
+{}
 
 //--------------------------------------------------
 // Initialization
 //--------------------------------------------------
 
-bool Game::Initialize(
-    Shader* shader)
+bool Game::Initialize(Shader* shader)
 {
-    renderer.SetShader(
-        shader);
 
-    if (!renderer.Initialize(
-        screenWidth,
-        screenHeight))
+    if (!spriteRenderer.Initialize(shader))
     {
         return false;
     }
 
-    InitializeCamera();
+    glm::mat4 projection = glm::ortho(
+        0.0f,
+        static_cast<float>(screenWidth),
+        static_cast<float>(screenHeight),
+        0.0f,
+        -1.0f,
+        1.0f
+    );
 
-    InitializeWorld();
+    shader->Use();
 
-    glfwSetInputMode(
-        window,
-        GLFW_CURSOR,
-        GLFW_CURSOR_DISABLED);
+    glUniformMatrix4fv(
+        glGetUniformLocation(
+            shader->GetID(),
+            "projection"
+        ),
+        1,
+        GL_FALSE,
+        glm::value_ptr(projection)
+    );
 
-    return true;
-}
+    if (!backgroundTexture.LoadFromFile(
+        "Src/Assets/Textures/background.png"))
+    {
+        return false;
+    }
 
-void Game::InitializeCamera()
-{
-    camera.SetPosition(
-        {
-            0.0f,
-            1.8f,
-            0.0f
+    if (!playerTexture.LoadFromFile(
+        "Src/Assets/Textures/player_idle.png"))
+    {
+        return false;
+    }
+
+    if (!tilesetTexture.LoadFromFile(
+        "Src/Assets/ObjectSprite/Tileset.png"))
+    {
+        return false;
+    }
+
+    if (!objectsTexture.LoadFromFile(
+        "Src/Assets/ObjectSprite/Objects.png"))
+    {
+        return false;
+    }
+
+    if (!spikesTexture.LoadFromFile(
+        "Src/Assets/ObjectSprite/Spikes.png"))
+    {
+        return false;
+    }
+
+    if (!predatorTexture.LoadFromFile(
+        "Src/Assets/ObjectSprite/Predator_plant.png"))
+    {
+        return false;
+    }
+
+    //--------------------------------------------------
+    // World Layout
+    //--------------------------------------------------
+
+    const float groundY = 690.0f;
+
+    //--------------------------------------------------
+    // Platform
+    //--------------------------------------------------
+
+    glm::vec4 platformUV = PixelRegionToUV(
+        160.0f,
+        20.0f,
+        120.0f,
+        120.0f,
+        static_cast<float>(tilesetTexture.GetWidth()),
+        static_cast<float>(tilesetTexture.GetHeight())
+    );
+
+    glm::vec2 platformSize(
+        180.0f,
+        180.0f
+    );
+
+    glm::vec2 platformPosition(
+        350.0f,
+        groundY - platformSize.y
+    );
+
+    worldSprites.push_back({
+        &tilesetTexture,
+        platformPosition,
+        platformSize,
+        glm::vec2(platformUV.x, platformUV.y),
+        glm::vec2(platformUV.z, platformUV.w)
         });
 
     //--------------------------------------------------
-    // Walk
+    // Tree
     //--------------------------------------------------
 
-    camera.SetWalkSpeed(
-        5.0f);
+    glm::vec4 treeUV = PixelRegionToUV(
+        20.0f,
+        10.0f,
+        210.0f,
+        280.0f,
+        static_cast<float>(objectsTexture.GetWidth()),
+        static_cast<float>(objectsTexture.GetHeight())
+    );
+
+    glm::vec2 treeSize(
+        250.0f,
+        360.0f
+    );
+
+    glm::vec2 treePosition(
+        20.0f,
+        groundY - treeSize.y
+    );
+
+    worldSprites.push_back({
+        &objectsTexture,
+        treePosition,
+        treeSize,
+        glm::vec2(treeUV.x, treeUV.y),
+        glm::vec2(treeUV.z, treeUV.w)
+        });
 
     //--------------------------------------------------
-    // Sprint
+    // Spikes
     //--------------------------------------------------
 
-    camera.SetSprintSpeed(
-        20.0f);
+    glm::vec2 spikesSize(
+        250.0f,
+        35.0f
+    );
+
+    glm::vec2 spikesPosition(
+        550.0f,
+        groundY - spikesSize.y
+    );
+
+    worldSprites.push_back({
+        &spikesTexture,
+        spikesPosition,
+        spikesSize,
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(1.0f, 1.0f)
+        });
 
     //--------------------------------------------------
-    // Mouse
+    // Predator Plant
     //--------------------------------------------------
 
-    camera.SetMouseSensitivity(
-        0.1f);
+    glm::vec4 predatorUV = PixelRegionToUV(
+        0.0f,
+        0.0f,
+        170.0f,
+        170.0f,
+        static_cast<float>(predatorTexture.GetWidth()),
+        static_cast<float>(predatorTexture.GetHeight())
+    );
 
-    //--------------------------------------------------
-    // Physics
-    //--------------------------------------------------
+    glm::vec2 predatorSize(
+        100.0f,
+        100.0f
+    );
 
-    camera.SetGravity(
-        20.0f);
+    glm::vec2 predatorPosition(
+        850.0f,
+        groundY - predatorSize.y
+    );
 
-    camera.SetJumpForce(
-        8.0f);
-
-    //--------------------------------------------------
-    // Collision
-    //--------------------------------------------------
-
-    camera.SetPlayerRadius(
-        0.4f);
-
-    camera.SetPlayerHeight(
-        1.8f);
-}
-
-void Game::InitializeWorld()
-{
-    world.Generate();
-
-    world.SetPlayerRadius(
-        camera.GetPlayerRadius());
+    worldSprites.push_back({
+        &predatorTexture,
+        predatorPosition,
+        predatorSize,
+        glm::vec2(predatorUV.x, predatorUV.y),
+        glm::vec2(predatorUV.z, predatorUV.w)
+        });
+    return true;
 }
 
 //--------------------------------------------------
 // Input
 //--------------------------------------------------
 
-void Game::ProcessInput(
-    float deltaTime)
+void Game::ProcessInput(float deltaTime)
 {
-    HandleKeyboardInput(
-        deltaTime);
-
-    HandleMouseInput();
-
-    HandleJumpInput();
-
-    HandleDoorInteraction();
+    HandleKeyboardInput(deltaTime);
 }
 
-void Game::HandleKeyboardInput(
-    float deltaTime)
+void Game::HandleKeyboardInput(float deltaTime)
 {
-    //--------------------------------------------------
-    // Sprint
-    //--------------------------------------------------
+    player.IsMoving = false;
+    player.Velocity.x = 0.0f;
 
-    if (
-        glfwGetKey(
-            window,
-            GLFW_KEY_LEFT_SHIFT)
-        ==
-        GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     {
-        camera.StartSprint();
-    }
-    else
-    {
-        camera.StopSprint();
+        player.Velocity.x = -player.Speed;
+        player.IsMoving = true;
     }
 
-    //--------------------------------------------------
-    // Save Position
-    //--------------------------------------------------
-
-    glm::vec3 oldPosition =
-        camera.GetPosition();
-
-    //--------------------------------------------------
-    // W
-    //--------------------------------------------------
-
-    if (
-        glfwGetKey(
-            window,
-            GLFW_KEY_W)
-        ==
-        GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
-        camera.MoveForward(
-            deltaTime);
+        player.Velocity.x = player.Speed;
+        player.IsMoving = true;
     }
 
-    //--------------------------------------------------
-    // S
-    //--------------------------------------------------
-
-    if (
-        glfwGetKey(
-            window,
-            GLFW_KEY_S)
-        ==
-        GLFW_PRESS)
-    {
-        camera.MoveBackward(
-            deltaTime);
-    }
-
-    //--------------------------------------------------
-    // A
-    //--------------------------------------------------
-
-    if (
-        glfwGetKey(
-            window,
-            GLFW_KEY_A)
-        ==
-        GLFW_PRESS)
-    {
-        camera.MoveLeft(
-            deltaTime);
-    }
-
-    //--------------------------------------------------
-    // D
-    //--------------------------------------------------
-
-    if (
-        glfwGetKey(
-            window,
-            GLFW_KEY_D)
-        ==
-        GLFW_PRESS)
-    {
-        camera.MoveRight(
-            deltaTime);
-    }
-
-    //--------------------------------------------------
-    // Collision
-    //--------------------------------------------------
-
-    if (
-        world.CheckCollision(
-            camera.GetPosition()))
-    {
-        camera.SetPosition(
-            oldPosition);
-    }
+    player.Position +=
+        player.Velocity * deltaTime;
 }
 
-void Game::HandleJumpInput()
-{
-    static bool keyReleased =
-        true;
-
-    if (
-        glfwGetKey(
-            window,
-            GLFW_KEY_SPACE)
-        ==
-        GLFW_RELEASE)
-    {
-        keyReleased =
-            true;
-    }
-
-    if (
-        glfwGetKey(
-            window,
-            GLFW_KEY_SPACE)
-        ==
-        GLFW_PRESS
-        &&
-        keyReleased)
-    {
-        keyReleased =
-            false;
-
-        camera.Jump();
-    }
-}
-
-void Game::HandleMouseInput()
-{
-    double mouseX;
-    double mouseY;
-
-    glfwGetCursorPos(
-        window,
-        &mouseX,
-        &mouseY);
-
-    if (firstMouse)
-    {
-        lastMouseX =
-            static_cast<float>(
-                mouseX);
-
-        lastMouseY =
-            static_cast<float>(
-                mouseY);
-
-        firstMouse =
-            false;
-    }
-
-    float xOffset =
-        static_cast<float>(
-            mouseX)
-        -
-        lastMouseX;
-
-    float yOffset =
-        lastMouseY
-        -
-        static_cast<float>(
-            mouseY);
-
-    lastMouseX =
-        static_cast<float>(
-            mouseX);
-
-    lastMouseY =
-        static_cast<float>(
-            mouseY);
-
-    camera.ProcessMouseMovement(
-        xOffset,
-        yOffset);
-}
-
-void Game::HandleDoorInteraction()
-{
-    static bool keyReleased =
-        true;
-
-    if (
-        glfwGetKey(
-            window,
-            GLFW_KEY_E)
-        ==
-        GLFW_RELEASE)
-    {
-        keyReleased =
-            true;
-    }
-
-    if (
-        glfwGetKey(
-            window,
-            GLFW_KEY_E)
-        ==
-        GLFW_PRESS
-        &&
-        keyReleased)
-    {
-        keyReleased =
-            false;
-
-        //--------------------------------------------------
-        // Treasure Chest
-        //--------------------------------------------------
-
-        TreasureChest* chest =
-            world.GetInteractableTreasureChest(
-                camera.GetPosition());
-
-        if (chest != nullptr)
-        {
-            chest->Toggle();
-            return;
-        }
-
-        //--------------------------------------------------
-        // Dragon Head
-        //--------------------------------------------------
-
-        DragonHead* dragonHead =
-            world.GetInteractableDragonHead(
-                camera.GetPosition());
-
-        if (dragonHead != nullptr)
-        {
-            dragonHead->Toggle();
-            return;
-        }
-
-        //--------------------------------------------------
-        // Torches
-        //--------------------------------------------------
-
-        Torch* torch =
-            world.GetInteractableTorch(
-                camera.GetPosition());
-
-        if (torch != nullptr)
-        {
-            torch->Toggle();
-        }
-
-        //--------------------------------------------------
-        // Door
-        //--------------------------------------------------
-
-        if (
-            world.CanInteractWithDoor(
-                camera.GetPosition()))
-        {
-            world.GetDoor().
-                Toggle();
-
-            return;
-        }
-    }
-}
 //--------------------------------------------------
 // Update
 //--------------------------------------------------
@@ -415,186 +270,7 @@ void Game::HandleDoorInteraction()
 void Game::Update(
     float deltaTime)
 {
-    UpdatePhysics(
-        deltaTime);
-
-    UpdateCamera(
-        deltaTime);
-
-    UpdateWorld(
-        deltaTime);
-}
-
-void Game::UpdatePhysics(
-    float deltaTime)
-{
-    //--------------------------------------------------
-    // Previous Position
-    //--------------------------------------------------
-
-    glm::vec3 previousPosition =
-        camera.GetPosition();
-
-    //--------------------------------------------------
-    // Gravity
-    //--------------------------------------------------
-
-    camera.ApplyGravity(
-        deltaTime);
-
-    //--------------------------------------------------
-    // Collision
-    //--------------------------------------------------
-
-    if (
-        world.CheckCollision(
-            camera.GetPosition()))
-    {
-        camera.SetPosition(
-            previousPosition);
-    }
-
-    //--------------------------------------------------
-    // Flat Terrain
-    //--------------------------------------------------
-
-    glm::vec3 position =
-        camera.GetPosition();
-
-    float terrainHeight =
-        world.GetHeightAt(
-            position.x,
-            position.z);
-
-    if (
-        position.y
-        <=
-        terrainHeight +
-        camera.GetPlayerHeight())
-    {
-        camera.Land(
-            terrainHeight);
-    }
-}
-
-void Game::UpdateCamera(
-    float deltaTime)
-{
-    (void)deltaTime;
-
-    glm::vec3 position =
-        camera.GetPosition();
-
-    float terrainHeight =
-        world.GetHeightAt(
-            position.x,
-            position.z);
-
-    if (
-        camera.IsGrounded())
-    {
-        position.y =
-            terrainHeight +
-            camera.GetPlayerHeight();
-
-        camera.SetPosition(
-            position);
-    }
-}
-
-void Game::UpdateWorld(
-    float deltaTime)
-{
-    //--------------------------------------------------
-    // Door
-    //--------------------------------------------------
-
-    world.GetDoor().Update(
-        deltaTime);
-
-    //--------------------------------------------------
-    // Treasure Chests
-    //--------------------------------------------------
-
-    for (
-        TreasureChest& chest :
-        world.GetTreasureChests())
-    {
-        chest.Update(
-            deltaTime);
-    }
-
-    //--------------------------------------------------
-    // Dragon Heads
-    //--------------------------------------------------
-
-    for (
-        DragonHead& dragonHead :
-        world.GetDragonHeads())
-    {
-        dragonHead.Update(
-            deltaTime);
-    }
-
-    //--------------------------------------------------
-    // Dragon Interaction Message
-    //--------------------------------------------------
-    DragonHead* dragonHead =
-        world.GetInteractableDragonHead(
-            camera.GetPosition());
-
-    if (dragonHead != nullptr)
-    {
-        glfwSetWindowTitle(
-            window,
-            "FPS Explorer - Press E to Open Dragon Head");
-    }
-    else
-    {
-        glfwSetWindowTitle(
-            window,
-            "FPS Explorer");
-    }
-
-    //--------------------------------------------------
-    // Torches
-    //--------------------------------------------------
-
-    for (Torch& torch :
-        world.GetTorches())
-    {
-        torch.Update(deltaTime);
-    }
-
-    //--------------------------------------------------
-    // Torch Interaction Message
-    //--------------------------------------------------
-
-    Torch* torch =
-        world.GetInteractableTorch(
-            camera.GetPosition());
-
-    if (torch != nullptr)
-    {
-        if (torch->IsLit())
-        {
-            glfwSetWindowTitle(
-                window,
-                "FPS Explorer - Press E to Extinguish Torch");
-        }
-        else
-        {
-            glfwSetWindowTitle(
-                window,
-                "FPS Explorer - Press E to Light Torch");
-        }
-    }
-    else
-    {
-        glfwSetWindowTitle(
-            window,
-            "FPS Explorer");
-    }
+    player.UpdateAnimation(deltaTime);
 }
 
 //--------------------------------------------------
@@ -603,13 +279,60 @@ void Game::UpdateWorld(
 
 void Game::Render()
 {
-    renderer.BeginFrame();
+    //--------------------------------------------------
+    // Background
+    //--------------------------------------------------
 
-    renderer.RenderWorld(
-        world,
-        camera);
+    spriteRenderer.DrawSprite(
+        backgroundTexture.GetID(),
+        glm::vec2(0.0f),
+        glm::vec2(
+            static_cast<float>(screenWidth),
+            static_cast<float>(screenHeight)
+        )
+    );
 
-    renderer.EndFrame();
+    //--------------------------------------------------
+    // World objects
+    //--------------------------------------------------
+
+    for (const WorldSprite& sprite : worldSprites)
+    {
+        spriteRenderer.DrawSprite(
+            sprite.texture->GetID(),
+            sprite.position,
+            sprite.size,
+            0.0f,
+            glm::vec4(1.0f),
+            sprite.uvOffset,
+            sprite.uvScale
+        );
+    }
+
+    //--------------------------------------------------
+    // Player
+    //--------------------------------------------------
+
+    glm::vec2 playerUVScale(
+        1.0f / static_cast<float>(player.FrameCount),
+        1.0f
+    );
+
+    glm::vec2 playerUVOffset(
+        static_cast<float>(player.CurrentFrame)
+        * playerUVScale.x,
+        0.0f
+    );
+
+    spriteRenderer.DrawSprite(
+        playerTexture.GetID(),
+        player.Position,
+        player.Size,
+        0.0f,
+        glm::vec4(1.0f),
+        playerUVOffset,
+        playerUVScale
+    );
 }
 
 //--------------------------------------------------
@@ -618,25 +341,6 @@ void Game::Render()
 
 void Game::Shutdown()
 {
-}
-
-//--------------------------------------------------
-// Accessors
-//--------------------------------------------------
-
-Camera& Game::GetCamera()
-{
-    return camera;
-}
-
-World& Game::GetWorld()
-{
-    return world;
-}
-
-Renderer& Game::GetRenderer()
-{
-    return renderer;
 }
 
 //--------------------------------------------------

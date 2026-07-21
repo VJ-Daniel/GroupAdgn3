@@ -1,0 +1,28 @@
+# Visual Studio
+.vs/
+x64/
+Debug/
+Release/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+*.ipch
+*.db
+*.vsidx
+
+# Build output
+OpenGl/
+*.obj
+*.pdb
+*.ilk
+*.exe
+
+# Operating system files
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log

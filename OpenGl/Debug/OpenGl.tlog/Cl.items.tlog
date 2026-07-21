@@ -1,13 +1,6 @@
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\ArmorStand.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\ArmorStand.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\Camera.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\Camera.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\Door.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\Door.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\DragonHead.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\DragonHead.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\Game.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\Game.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\Main.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\Main.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\Mesh.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\Mesh.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\Renderer.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\Renderer.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\Shader.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\Shader.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\Torch.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\Torch.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\TreasureChest.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\TreasureChest.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\Tree.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\Tree.obj
-C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\Src\World.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\In-class Assignments\In-class Asgn4\OpenGl\Debug\World.obj
+C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\Src\Game.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\OpenGl\Debug\Game.obj
+C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\Src\Main.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\OpenGl\Debug\Main.obj
+C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\Src\Player.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\OpenGl\Debug\Player.obj
+C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\Src\Shader.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\OpenGl\Debug\Shader.obj
+C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\Src\SpriteRenderer.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\OpenGl\Debug\SpriteRenderer.obj
+C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\Src\Texture.cpp;C:\Users\vjdan\source\repos\SEM5\GAM531\ElsaCrystalQuest\OpenGl\Debug\Texture.obj

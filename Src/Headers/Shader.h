@@ -1,5 +1,7 @@
 #ifndef SHADER_H
 #define SHADER_H
+#include <glm.hpp>
+#include <string>
 
 class Shader
 {
@@ -20,6 +22,21 @@ public:
     Shader(
         const char* vertexPath,
         const char* fragmentPath);
+
+    //--------------------------------------------------
+    // Uniform 
+    //--------------------------------------------------
+
+    void SetUniform(
+        const char* name,
+        int value);
+
+    //--------------------------------------------------
+    // Matrices
+    //--------------------------------------------------
+	void SetMat4(
+		const std::string& name,
+		const glm::mat4& matrix);
 
     //--------------------------------------------------
     // Usage
