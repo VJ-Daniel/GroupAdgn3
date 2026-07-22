@@ -25,5 +25,7 @@ public:
 
     bool IsMoving;
 
+    bool IsFacingLeft;
+
     void UpdateAnimation(float deltaTime);
 };

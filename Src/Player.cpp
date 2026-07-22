@@ -14,8 +14,10 @@ Player::Player(
     FrameCount(4),
     AnimationTimer(0.0f),
     AnimationSpeed(0.12f),
-    IsMoving(false)
-{}
+    IsMoving(false),
+    IsFacingLeft(false)
+{
+}
 
 void Player::UpdateAnimation(float deltaTime)
 {

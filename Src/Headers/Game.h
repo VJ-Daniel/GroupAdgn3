@@ -11,6 +11,7 @@
 #include "Player.h"
 
 #include "Collision.h"
+#include "Input.h"
 struct WorldSprite
 {
     Texture* texture;
@@ -57,6 +58,8 @@ private:
 
     Player player;
 
+    Input playerInput;
+
     std::vector<WorldSprite> worldSprites;
 
     //--------------------------------------------------
@@ -84,6 +87,13 @@ private:
         float deltaTime);
     // helper function
     std::vector<AABB> BuildSolids() const;
+
+    // Top Y of the walkable ground surface (top of the
+    // grass cap), or -1.0f if the ground hasn't been laid
+    // down yet. Shared by BuildSolids() (the floor solid)
+    // and HandleKeyboardInput() (the hard floor clamp) so
+    // they can't disagree on where the ground actually is.
+    float GetFloorTop() const;
 public:
 
     //--------------------------------------------------

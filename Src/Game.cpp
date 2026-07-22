@@ -1,4 +1,3 @@
-// Game.cpp
 #include <iostream>
 #include "Game.h"
 
@@ -40,7 +39,8 @@ Game::Game(
         glm::vec2(200.0f, 128.0f),
         250.0f
     )
-{}
+{
+}
 
 //--------------------------------------------------
 // Initialization
@@ -468,29 +468,48 @@ std::vector<AABB> Game::BuildSolids() const
                 true));   // anchor to bottom
     }
 
+    //--------------------------------------------------
+    // Floor
+    //
+    // groundDirtTiles/groundGrassTiles are a separate
+    // background layer, kept out of the loop above on
+    // purpose so they can't shift the index-based hitbox
+    // tuning in the switch above. But now that Input
+    // applies gravity, the player needs something solid
+    // to actually land on - without this the ground is
+    // purely visual and Elsa falls straight through it.
+    //
+    // Added AFTER the loop so it never disturbs the
+    // worldSprites index numbering used in the switch.
+    //--------------------------------------------------
+
+    float floorTop = GetFloorTop();
+
+    if (floorTop > 0.0f)
+    {
+        solids.push_back({
+            glm::vec2(0.0f, floorTop),
+            glm::vec2(static_cast<float>(screenWidth), 5000.0f)
+            });
+    }
+
     return solids;
+}
+
+float Game::GetFloorTop() const
+{
+    // -1.0f means "no ground laid down yet" (e.g. called
+    // before Initialize() finishes).
+    if (groundGrassTiles.empty())
+    {
+        return -1.0f;
+    }
+
+    return groundGrassTiles.front().position.y;
 }
 
 void Game::HandleKeyboardInput(float deltaTime)
 {
-    player.IsMoving = false;
-    player.Velocity.x = 0.0f;
-
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    {
-        player.Velocity.x = -player.Speed;
-        player.IsMoving = true;
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    {
-        player.Velocity.x = player.Speed;
-        player.IsMoving = true;
-    }
-
-    glm::vec2 desired =
-        player.Position + player.Velocity * deltaTime;
-
     std::vector<AABB> solids = BuildSolids();
 
     //--------------------------------------------------
@@ -507,17 +526,78 @@ void Game::HandleKeyboardInput(float deltaTime)
         player.Position, player.Size,
         PLAYER_FRAC_X, PLAYER_FRAC_Y, true);
 
+    //--------------------------------------------------
+    // Input owns walking, jump/double-jump, gravity, and
+    // dash - it writes the result into player.Velocity.
+    // The pre-move hitbox + current solids are passed in
+    // only so it can tell whether Elsa is grounded, which
+    // is what refills the double jump.
+    //--------------------------------------------------
+
+    playerInput.Update(
+        window,
+        deltaTime,
+        player,
+        oldBox,
+        solids);
+
+    glm::vec2 desired =
+        player.Position + player.Velocity * deltaTime;
+
     AABB desiredBox = Collision::MakeBox(
         desired, player.Size,
         PLAYER_FRAC_X, PLAYER_FRAC_Y, true);
 
     glm::vec2 offset = oldBox.position - player.Position;
 
-    glm::vec2 resolvedBox = Collision::ResolveMovement(
-        oldBox.position,
-        desiredBox.position,
-        oldBox.size,
-        solids);
+    glm::vec2 resolvedBox;
+
+    if (playerInput.IsDashing())
+    {
+        // Dash punches straight through solids instead of
+        // being blocked - this is the "smash through weak
+        // obstacles / cross wide gaps" part of the move.
+        resolvedBox = desiredBox.position;
+    }
+    else
+    {
+        resolvedBox = Collision::ResolveMovement(
+            oldBox.position,
+            desiredBox.position,
+            oldBox.size,
+            solids);
+    }
+
+    //--------------------------------------------------
+    // Floor clamp (always applied, no exceptions)
+    //
+    // Collision::ResolveMovement's anti-stuck guard lets
+    // a move through UNCHECKED (all axes, all solids) if
+    // the player is currently overlapping anything at all
+    // - including something small like a bush. A dash
+    // that clips the player slightly into a bush/plant
+    // hitbox in a tight gap would trigger that guard next
+    // frame and cancel floor collision too, dropping the
+    // player through the ground.
+    //
+    // This clamp is a hard backstop against that: no
+    // matter what the general collision step decided,
+    // the player's hitbox can never end up with its
+    // bottom edge below the floor.
+    //--------------------------------------------------
+
+    float floorTop = GetFloorTop();
+
+    if (floorTop > 0.0f)
+    {
+        float hitboxBottom = resolvedBox.y + oldBox.size.y;
+
+        if (hitboxBottom > floorTop)
+        {
+            resolvedBox.y = floorTop - oldBox.size.y;
+            player.Velocity.y = 0.0f;
+        }
+    }
 
     player.Position = resolvedBox - offset;
 }
@@ -615,6 +695,28 @@ void Game::Render()
         * playerUVScale.x,
         0.0f
     );
+
+    //--------------------------------------------------
+    // Horizontal flip
+    //
+    // The source sheet faces right by default. When
+    // Elsa is facing left, mirror the sampled frame by
+    // walking its UV range backwards - shift the offset
+    // to the frame's right edge and negate the scale -
+    // instead of needing a separate mirrored texture.
+    //
+    // NOTE: this assumes the sprite shader samples with
+    // texCoord = uvOffset + vertexUV * uvScale (the same
+    // convention the per-frame animation above already
+    // relies on). If the flip looks wrong or the sprite
+    // vanishes, check sprite.frag against that formula.
+    //--------------------------------------------------
+
+    if (player.IsFacingLeft)
+    {
+        playerUVOffset.x += playerUVScale.x;
+        playerUVScale.x = -playerUVScale.x;
+    }
 
     spriteRenderer.DrawSprite(
         playerTexture.GetID(),
