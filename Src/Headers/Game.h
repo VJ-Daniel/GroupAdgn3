@@ -10,6 +10,7 @@
 #include "Texture.h"
 #include "Player.h"
 
+#include "Collision.h"
 struct WorldSprite
 {
     Texture* texture;
@@ -62,7 +63,8 @@ private:
 
     void HandleKeyboardInput(
         float deltaTime);
-
+    // helper function
+    std::vector<AABB> BuildSolids() const;
 public:
 
     //--------------------------------------------------

@@ -1,3 +1,4 @@
+// Game.cpp
 #include <iostream>
 #include "Game.h"
 
@@ -242,6 +243,65 @@ void Game::ProcessInput(float deltaTime)
     HandleKeyboardInput(deltaTime);
 }
 
+std::vector<AABB> Game::BuildSolids() const
+{
+    std::vector<AABB> solids;
+    solids.reserve(worldSprites.size());
+
+    //--------------------------------------------------
+    // Sprite quads are much larger than the art inside
+    // them (transparent padding), so each solid uses a
+    // shrunk hitbox anchored to the bottom of the quad.
+    //
+    // worldSprites order (from Initialize):
+    //   0 platform, 1 tree, 2 spikes, 3 predator plant
+    //--------------------------------------------------
+
+    for (std::size_t i = 0; i < worldSprites.size(); ++i)
+    {
+        const WorldSprite& s = worldSprites[i];
+
+        float fracX = 0.80f;
+        float fracY = 0.60f;
+
+        switch (i)
+        {
+        case 0:  // platform - wide and solid
+            fracX = 0.90f;
+            fracY = 0.50f;
+            break;
+
+        case 1:  // tree - only the trunk should block
+            fracX = 0.20f;
+            fracY = 0.55f;
+            break;
+
+        case 2:  // spikes - low and wide
+            fracX = 0.95f;
+            fracY = 0.90f;
+            break;
+
+        case 3:  // predator plant - narrow
+            fracX = 0.50f;
+            fracY = 0.80f;
+            break;
+
+        default:
+            break;
+        }
+
+        solids.push_back(
+            Collision::MakeBox(
+                s.position,
+                s.size,
+                fracX,
+                fracY,
+                true));   // anchor to bottom
+    }
+
+    return solids;
+}
+
 void Game::HandleKeyboardInput(float deltaTime)
 {
     player.IsMoving = false;
@@ -259,8 +319,38 @@ void Game::HandleKeyboardInput(float deltaTime)
         player.IsMoving = true;
     }
 
-    player.Position +=
-        player.Velocity * deltaTime;
+    glm::vec2 desired =
+        player.Position + player.Velocity * deltaTime;
+
+    std::vector<AABB> solids = BuildSolids();
+
+    //--------------------------------------------------
+    // Elsa's sprite quad is far wider than her artwork,
+    // so collision uses a narrow hitbox inside the quad.
+    // We resolve the HITBOX, then convert back to the
+    // sprite position by removing the same offset.
+    //--------------------------------------------------
+
+    const float PLAYER_FRAC_X = 0.22f;
+    const float PLAYER_FRAC_Y = 0.85f;
+
+    AABB oldBox = Collision::MakeBox(
+        player.Position, player.Size,
+        PLAYER_FRAC_X, PLAYER_FRAC_Y, true);
+
+    AABB desiredBox = Collision::MakeBox(
+        desired, player.Size,
+        PLAYER_FRAC_X, PLAYER_FRAC_Y, true);
+
+    glm::vec2 offset = oldBox.position - player.Position;
+
+    glm::vec2 resolvedBox = Collision::ResolveMovement(
+        oldBox.position,
+        desiredBox.position,
+        oldBox.size,
+        solids);
+
+    player.Position = resolvedBox - offset;
 }
 
 //--------------------------------------------------
