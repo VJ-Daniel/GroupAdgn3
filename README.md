@@ -35,7 +35,26 @@ The objective of the game is to safely guide Elsa through every level, overcome 
 
 # World Setting
 
-The game takes place in an enchanted medieval forest filled with towering trees, ancient ruins, wooden bridges, rocky cliffs, and hidden pathways. Although the environment appears peaceful, it is filled with dangerous hazards and creatures that stand between Elsa and the lost crystals. Each level introduces new platforming challenges while maintaining the fantasy atmosphere through lush scenery, medieval architecture, and mystical elements.
+### Environment
+The game takes place in an enchanted medieval forest scattered with towering trees, mossy stone platforms, dense bushes, and patches of dangerous overgrowth. The forest floor winds between clusters of vegetation, giving each stretch of the path its own identity even within a single clearing.
+
+### Theme
+Fantasy medieval — the same tone as Elsa herself. Weathered stone, timber, and untamed plant life stand in for the ruined, crystal-starved village she's trying to restore.
+
+### Atmosphere
+Although the forest looks calm and lush at a glance, it is quietly hostile. Golden-green light filters through the canopy, but the peaceful scenery is broken up by hazards at every turn, keeping the player alert even in open ground.
+
+### Obstacles
+The scene currently contains six world objects along Elsa's path:
+
+1. **Stone platform** — an elevated ledge that requires a jump to reach.
+2. **Tree (start)** — a solid trunk near the spawn point.
+3. **Spikes** — a low, wide hazard that must be jumped or dashed over.
+4. **Bush** — ground-level clutter between the spikes and the predator plant.
+5. **Predator plant** — a narrow, animated hazard guarding the mid-path.
+6. **Second tree** — a trunk further along the path, past the predator plant.
+
+Each object uses a collision hitbox shrunk to its visible art (not its full transparent sprite quad), so Elsa collides with what she can actually see.
 
 ---
 

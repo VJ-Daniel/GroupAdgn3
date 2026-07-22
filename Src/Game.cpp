@@ -117,15 +117,93 @@ bool Game::Initialize(Shader* shader)
 
     const float groundY = 690.0f;
 
+    // Shared tree crop has a few px of transparent padding
+    // below the visible trunk base, so lift both tree
+    // instances slightly off the ground anchor line.
+    const float treeGroundOffset = 28.0f;
+
+    //--------------------------------------------------
+    // Ground
+    //
+    // A flat, seamless dirt strip spanning the full
+    // screen width so Elsa stands on visible ground
+    // instead of floating over empty space between
+    // props. Tiled 1:1 at the source tile's native
+    // 32x32 size to avoid any stretching artifacts.
+    //
+    // Four dirt source tiles are cycled (they're subtly
+    // different rock/shading variants in the sheet) so
+    // the strip doesn't read as one tile repeated.
+    //--------------------------------------------------
+
+    const float dirtSourceX[4] = { 160.0f, 192.0f, 224.0f, 256.0f };
+    const float groundTileSize = 32.0f;
+    const float groundHeight =
+        static_cast<float>(screenHeight) - groundY;
+
+    int dirtIndex = 0;
+
+    for (float x = 0.0f;
+        x < static_cast<float>(screenWidth);
+        x += groundTileSize, ++dirtIndex)
+    {
+        glm::vec4 dirtUV = PixelRegionToUV(
+            dirtSourceX[dirtIndex % 4],
+            320.0f,
+            32.0f,
+            32.0f,
+            static_cast<float>(tilesetTexture.GetWidth()),
+            static_cast<float>(tilesetTexture.GetHeight())
+        );
+
+        groundDirtTiles.push_back({
+            &tilesetTexture,
+            glm::vec2(x, groundY),
+            glm::vec2(groundTileSize, groundHeight),
+            glm::vec2(dirtUV.x, dirtUV.y),
+            glm::vec2(dirtUV.z, dirtUV.w)
+            });
+    }
+
+    //--------------------------------------------------
+    // Grass cap
+    //
+    // A row of grass-topped tiles sitting right above
+    // the dirt strip, so the ground reads as grass over
+    // dirt instead of plain dirt.
+    //--------------------------------------------------
+
+    glm::vec4 grassCapUV = PixelRegionToUV(
+        224.0f,
+        0.0f,
+        32.0f,
+        32.0f,
+        static_cast<float>(tilesetTexture.GetWidth()),
+        static_cast<float>(tilesetTexture.GetHeight())
+    );
+
+    for (float x = 0.0f;
+        x < static_cast<float>(screenWidth);
+        x += groundTileSize)
+    {
+        groundGrassTiles.push_back({
+            &tilesetTexture,
+            glm::vec2(x, groundY - groundTileSize),
+            glm::vec2(groundTileSize, groundTileSize),
+            glm::vec2(grassCapUV.x, grassCapUV.y),
+            glm::vec2(grassCapUV.z, grassCapUV.w)
+            });
+    }
+
     //--------------------------------------------------
     // Platform
     //--------------------------------------------------
 
     glm::vec4 platformUV = PixelRegionToUV(
-        160.0f,
-        20.0f,
-        120.0f,
-        120.0f,
+        97.0f,
+        320.0f,
+        58.0f,
+        60.0f,
         static_cast<float>(tilesetTexture.GetWidth()),
         static_cast<float>(tilesetTexture.GetHeight())
     );
@@ -136,7 +214,7 @@ bool Game::Initialize(Shader* shader)
     );
 
     glm::vec2 platformPosition(
-        350.0f,
+        650.0f,
         groundY - platformSize.y
     );
 
@@ -150,13 +228,16 @@ bool Game::Initialize(Shader* shader)
 
     //--------------------------------------------------
     // Tree
+    //
+    // Reuses the same source crop as the second tree
+    // further down the path, so both trees match.
     //--------------------------------------------------
 
     glm::vec4 treeUV = PixelRegionToUV(
-        20.0f,
-        10.0f,
-        210.0f,
-        280.0f,
+        558.0f,
+        158.0f,
+        100.0f,
+        140.0f,
         static_cast<float>(objectsTexture.GetWidth()),
         static_cast<float>(objectsTexture.GetHeight())
     );
@@ -168,7 +249,7 @@ bool Game::Initialize(Shader* shader)
 
     glm::vec2 treePosition(
         20.0f,
-        groundY - treeSize.y
+        groundY - treeSize.y - treeGroundOffset
     );
 
     worldSprites.push_back({
@@ -176,7 +257,8 @@ bool Game::Initialize(Shader* shader)
         treePosition,
         treeSize,
         glm::vec2(treeUV.x, treeUV.y),
-        glm::vec2(treeUV.z, treeUV.w)
+        glm::vec2(treeUV.z, treeUV.w),
+        true    // isTree - draw behind the grass cap
         });
 
     //--------------------------------------------------
@@ -189,7 +271,7 @@ bool Game::Initialize(Shader* shader)
     );
 
     glm::vec2 spikesPosition(
-        550.0f,
+        330.0f,
         groundY - spikesSize.y
     );
 
@@ -203,24 +285,30 @@ bool Game::Initialize(Shader* shader)
 
     //--------------------------------------------------
     // Predator Plant
+    //
+    // The source sheet is a 2x9 animation grid with a
+    // lot of transparent padding around each frame; this
+    // crop is trimmed to frame 0's actual art so the
+    // plant sits flush on the ground instead of floating
+    // above it.
     //--------------------------------------------------
 
     glm::vec4 predatorUV = PixelRegionToUV(
-        0.0f,
-        0.0f,
-        170.0f,
-        170.0f,
+        18.0f,
+        33.0f,
+        66.0f,
+        88.0f,
         static_cast<float>(predatorTexture.GetWidth()),
         static_cast<float>(predatorTexture.GetHeight())
     );
 
     glm::vec2 predatorSize(
-        100.0f,
-        100.0f
+        90.0f,
+        120.0f
     );
 
     glm::vec2 predatorPosition(
-        850.0f,
+        990.0f,
         groundY - predatorSize.y
     );
 
@@ -231,6 +319,76 @@ bool Game::Initialize(Shader* shader)
         glm::vec2(predatorUV.x, predatorUV.y),
         glm::vec2(predatorUV.z, predatorUV.w)
         });
+
+    //--------------------------------------------------
+    // Bush
+    //
+    // Low ground clutter placed between the platform
+    // and the predator plant.
+    //--------------------------------------------------
+
+    glm::vec4 bushUV = PixelRegionToUV(
+        678.0f,
+        256.0f,
+        54.0f,
+        50.0f,
+        static_cast<float>(objectsTexture.GetWidth()),
+        static_cast<float>(objectsTexture.GetHeight())
+    );
+
+    glm::vec2 bushSize(
+        90.0f,
+        84.0f
+    );
+
+    glm::vec2 bushPosition(
+        860.0f,
+        groundY - bushSize.y
+    );
+
+    worldSprites.push_back({
+        &objectsTexture,
+        bushPosition,
+        bushSize,
+        glm::vec2(bushUV.x, bushUV.y),
+        glm::vec2(bushUV.z, bushUV.w)
+        });
+
+    //--------------------------------------------------
+    // Second Tree
+    //
+    // Same source crop as the starting tree, placed
+    // further along Elsa's path for a consistent look.
+    //--------------------------------------------------
+
+    glm::vec4 tree2UV = PixelRegionToUV(
+        558.0f,
+        158.0f,
+        100.0f,
+        140.0f,
+        static_cast<float>(objectsTexture.GetWidth()),
+        static_cast<float>(objectsTexture.GetHeight())
+    );
+
+    glm::vec2 tree2Size(
+        180.0f,
+        250.0f
+    );
+
+    glm::vec2 tree2Position(
+        1090.0f,
+        groundY - tree2Size.y - treeGroundOffset
+    );
+
+    worldSprites.push_back({
+        &objectsTexture,
+        tree2Position,
+        tree2Size,
+        glm::vec2(tree2UV.x, tree2UV.y),
+        glm::vec2(tree2UV.z, tree2UV.w),
+        true    // isTree - draw behind the grass cap
+        });
+
     return true;
 }
 
@@ -254,7 +412,8 @@ std::vector<AABB> Game::BuildSolids() const
     // shrunk hitbox anchored to the bottom of the quad.
     //
     // worldSprites order (from Initialize):
-    //   0 platform, 1 tree, 2 spikes, 3 predator plant
+    //   0 platform, 1 tree, 2 spikes, 3 predator plant,
+    //   4 bush, 5 second tree
     //--------------------------------------------------
 
     for (std::size_t i = 0; i < worldSprites.size(); ++i)
@@ -284,6 +443,16 @@ std::vector<AABB> Game::BuildSolids() const
         case 3:  // predator plant - narrow
             fracX = 0.50f;
             fracY = 0.80f;
+            break;
+
+        case 4:  // bush - low and round
+            fracX = 0.70f;
+            fracY = 0.55f;
+            break;
+
+        case 5:  // second tree - only the trunk should block
+            fracX = 0.20f;
+            fracY = 0.55f;
             break;
 
         default:
@@ -383,20 +552,53 @@ void Game::Render()
     );
 
     //--------------------------------------------------
-    // World objects
+    // Draw order (no depth testing - painter's algorithm):
+    //
+    //   1. Dirt
+    //   2. Trees            (so trunk bases sit UNDER the
+    //                        grass cap, hiding the roots)
+    //   3. Grass cap
+    //   4. Remaining props
+    //   5. Player
     //--------------------------------------------------
+
+    auto drawWorldSprite = [this](const WorldSprite& sprite)
+        {
+            spriteRenderer.DrawSprite(
+                sprite.texture->GetID(),
+                sprite.position,
+                sprite.size,
+                0.0f,
+                glm::vec4(1.0f),
+                sprite.uvOffset,
+                sprite.uvScale
+            );
+        };
+
+    for (const WorldSprite& tile : groundDirtTiles)
+    {
+        drawWorldSprite(tile);
+    }
 
     for (const WorldSprite& sprite : worldSprites)
     {
-        spriteRenderer.DrawSprite(
-            sprite.texture->GetID(),
-            sprite.position,
-            sprite.size,
-            0.0f,
-            glm::vec4(1.0f),
-            sprite.uvOffset,
-            sprite.uvScale
-        );
+        if (sprite.isTree)
+        {
+            drawWorldSprite(sprite);
+        }
+    }
+
+    for (const WorldSprite& tile : groundGrassTiles)
+    {
+        drawWorldSprite(tile);
+    }
+
+    for (const WorldSprite& sprite : worldSprites)
+    {
+        if (!sprite.isTree)
+        {
+            drawWorldSprite(sprite);
+        }
     }
 
     //--------------------------------------------------
