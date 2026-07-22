@@ -1,3 +1,4 @@
+// Main.cpp
 /*
     ============================================================
     Elsa's Crystal Quest - OpenGL 2D Platformer
@@ -42,6 +43,7 @@
 #include "Shader.h"
 #include "Game.h"
 
+#include "CollisionTests.h"
 // ------------------------------------------------------------
 // Window settings
 // ------------------------------------------------------------
@@ -311,6 +313,8 @@ int main()
 
         return -1;
     }
+
+    RunCollisionSelfTests();
 
     // --------------------------------------------------------
     // Store the time of the previous frame.
