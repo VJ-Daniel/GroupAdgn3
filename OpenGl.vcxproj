@@ -143,6 +143,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Src\Collision.cpp" />
+    <ClCompile Include="Src\CollisionTests.cpp" />
     <ClCompile Include="Src\Game.cpp" />
     <ClCompile Include="Src\Main.cpp" />
     <ClCompile Include="Src\Player.cpp" />
@@ -152,6 +154,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\Dependencies\stb_image.h" />
+    <ClInclude Include="Src\Headers\Collision.h" />
+    <ClInclude Include="Src\Headers\CollisionTests.h" />
     <ClInclude Include="Src\Headers\Game.h" />
     <ClInclude Include="Src\Headers\Player.h" />
     <ClInclude Include="Src\Headers\Shader.h" />
