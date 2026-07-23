@@ -1,10 +1,45 @@
 // Game.cpp
 #include <iostream>
+#include <cstddef>
 #include "Game.h"
 
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>   
+
+namespace
+{
+    constexpr int PLAYER_FRAME_WIDTH = 100;
+    constexpr float DASH_SPEED = 650.0f;
+
+    std::size_t PlayerStateIndex(PlayerState state)
+    {
+        return static_cast<std::size_t>(state);
+    }
+
+    int GetSheetFrameCount(const Texture& texture)
+    {
+        return texture.GetWidth() / PLAYER_FRAME_WIDTH;
+    }
+}
+
+int PlayerAnimationClip::GetFrameCount() const
+{
+    int totalFrames = 0;
+
+    for (const PlayerAnimationSheet& sheet : sheets)
+    {
+        totalFrames += sheet.frameCount;
+    }
+
+    return totalFrames;
+}
+
+float PlayerAnimationClip::GetDuration() const
+{
+    return frameDuration *
+        static_cast<float>(GetFrameCount());
+}
 
 glm::vec4 PixelRegionToUV(
     float x,
@@ -36,8 +71,8 @@ Game::Game(
     screenWidth(width),
     screenHeight(height),
     player(
-        glm::vec2(100.0f, 500.0f),
-        glm::vec2(200.0f, 128.0f),
+        glm::vec2(100.0f, 594.0f),
+        glm::vec2(100.0f, 64.0f),
         250.0f
     )
 {}
@@ -81,11 +116,56 @@ bool Game::Initialize(Shader* shader)
         return false;
     }
 
-    if (!playerTexture.LoadFromFile(
-        "Src/Assets/Textures/player_idle.png"))
+    if (!LoadPlayerAnimationTexture(
+        playerIdle1Texture,
+        "Src/Assets/PlayerSprite/Idle_KG_1.png") ||
+        !LoadPlayerAnimationTexture(
+            playerIdle2Texture,
+            "Src/Assets/PlayerSprite/Idle_KG_2.png") ||
+        !LoadPlayerAnimationTexture(
+            playerWalking1Texture,
+            "Src/Assets/PlayerSprite/Walking_KG_1.png") ||
+        !LoadPlayerAnimationTexture(
+            playerWalking2Texture,
+            "Src/Assets/PlayerSprite/Walking_KG_2.png") ||
+        !LoadPlayerAnimationTexture(
+            playerJumpTexture,
+            "Src/Assets/PlayerSprite/Jump_KG_1.png") ||
+        !LoadPlayerAnimationTexture(
+            playerFallTexture,
+            "Src/Assets/PlayerSprite/Fall_KG_1.png") ||
+        !LoadPlayerAnimationTexture(
+            playerLanding1Texture,
+            "Src/Assets/PlayerSprite/Landing_KG_1.png") ||
+        !LoadPlayerAnimationTexture(
+            playerLanding2Texture,
+            "Src/Assets/PlayerSprite/Landing_KG_2.png") ||
+        !LoadPlayerAnimationTexture(
+            playerDashingTexture,
+            "Src/Assets/PlayerSprite/Dashing_KG_1.png") ||
+        !LoadPlayerAnimationTexture(
+            playerAttack1Texture,
+            "Src/Assets/PlayerSprite/Attack_KG_1.png") ||
+        !LoadPlayerAnimationTexture(
+            playerAttack2Texture,
+            "Src/Assets/PlayerSprite/Attack_KG_2.png") ||
+        !LoadPlayerAnimationTexture(
+            playerAttack3Texture,
+            "Src/Assets/PlayerSprite/Attack_KG_3.png") ||
+        !LoadPlayerAnimationTexture(
+            playerAttack4Texture,
+            "Src/Assets/PlayerSprite/Attack_KG_4.png") ||
+        !LoadPlayerAnimationTexture(
+            playerHurt1Texture,
+            "Src/Assets/PlayerSprite/Hurt_KG_1.png") ||
+        !LoadPlayerAnimationTexture(
+            playerHurt2Texture,
+            "Src/Assets/PlayerSprite/Hurt_KG_2.png"))
     {
         return false;
     }
+
+    BuildPlayerAnimationClips();
 
     if (!tilesetTexture.LoadFromFile(
         "Src/Assets/ObjectSprite/Tileset.png"))
@@ -120,7 +200,7 @@ bool Game::Initialize(Shader* shader)
     // Shared tree crop has a few px of transparent padding
     // below the visible trunk base, so lift both tree
     // instances slightly off the ground anchor line.
-    const float treeGroundOffset = 28.0f;
+    const float treeGroundOffset = 18.0f;
 
     //--------------------------------------------------
     // Ground
@@ -209,8 +289,8 @@ bool Game::Initialize(Shader* shader)
     );
 
     glm::vec2 platformSize(
-        180.0f,
-        180.0f
+        96.0f,
+        96.0f
     );
 
     glm::vec2 platformPosition(
@@ -243,8 +323,8 @@ bool Game::Initialize(Shader* shader)
     );
 
     glm::vec2 treeSize(
-        250.0f,
-        360.0f
+        160.0f,
+        224.0f
     );
 
     glm::vec2 treePosition(
@@ -266,8 +346,8 @@ bool Game::Initialize(Shader* shader)
     //--------------------------------------------------
 
     glm::vec2 spikesSize(
-        250.0f,
-        35.0f
+        144.0f,
+        24.0f
     );
 
     glm::vec2 spikesPosition(
@@ -303,8 +383,8 @@ bool Game::Initialize(Shader* shader)
     );
 
     glm::vec2 predatorSize(
-        90.0f,
-        120.0f
+        70.0f,
+        94.0f
     );
 
     glm::vec2 predatorPosition(
@@ -337,8 +417,8 @@ bool Game::Initialize(Shader* shader)
     );
 
     glm::vec2 bushSize(
-        90.0f,
-        84.0f
+        56.0f,
+        52.0f
     );
 
     glm::vec2 bushPosition(
@@ -371,8 +451,8 @@ bool Game::Initialize(Shader* shader)
     );
 
     glm::vec2 tree2Size(
-        180.0f,
-        250.0f
+        120.0f,
+        168.0f
     );
 
     glm::vec2 tree2Position(
@@ -390,6 +470,246 @@ bool Game::Initialize(Shader* shader)
         });
 
     return true;
+}
+
+bool Game::LoadPlayerAnimationTexture(
+    Texture& texture,
+    const char* filePath)
+{
+    if (!texture.LoadFromFile(filePath))
+    {
+        return false;
+    }
+
+    if (texture.GetWidth() < PLAYER_FRAME_WIDTH ||
+        texture.GetWidth() % PLAYER_FRAME_WIDTH != 0)
+    {
+        std::cerr
+            << "Player animation sheet is not a row of "
+            << PLAYER_FRAME_WIDTH
+            << "px-wide frames: "
+            << filePath
+            << " ("
+            << texture.GetWidth()
+            << " x "
+            << texture.GetHeight()
+            << ")\n";
+
+        return false;
+    }
+
+    return true;
+}
+
+void Game::BuildPlayerAnimationClips()
+{
+    for (PlayerAnimationClip& clip : playerAnimationClips)
+    {
+        clip = PlayerAnimationClip();
+    }
+
+    auto addSheet =
+        [](PlayerAnimationClip& clip, Texture& texture)
+        {
+            clip.sheets.push_back({
+                &texture,
+                GetSheetFrameCount(texture)
+                });
+        };
+
+    PlayerAnimationClip& idle =
+        playerAnimationClips[PlayerStateIndex(PlayerState::Idle)];
+    idle.frameDuration = 0.16f;
+    idle.loop = true;
+    addSheet(idle, playerIdle1Texture);
+    addSheet(idle, playerIdle2Texture);
+
+    PlayerAnimationClip& running =
+        playerAnimationClips[PlayerStateIndex(PlayerState::Running)];
+    running.frameDuration = 0.08f;
+    running.loop = true;
+    addSheet(running, playerWalking1Texture);
+    addSheet(running, playerWalking2Texture);
+
+    PlayerAnimationClip& jumping =
+        playerAnimationClips[PlayerStateIndex(PlayerState::Jumping)];
+    jumping.frameDuration = 0.07f;
+    jumping.loop = false;
+    addSheet(jumping, playerJumpTexture);
+
+    PlayerAnimationClip& falling =
+        playerAnimationClips[PlayerStateIndex(PlayerState::Falling)];
+    falling.frameDuration = 0.10f;
+    falling.loop = true;
+    addSheet(falling, playerFallTexture);
+
+    PlayerAnimationClip& landing =
+        playerAnimationClips[PlayerStateIndex(PlayerState::Landing)];
+    landing.frameDuration = 0.06f;
+    landing.loop = false;
+    addSheet(landing, playerLanding1Texture);
+    addSheet(landing, playerLanding2Texture);
+
+    PlayerAnimationClip& dashing =
+        playerAnimationClips[PlayerStateIndex(PlayerState::Dashing)];
+    dashing.frameDuration = 0.05f;
+    dashing.loop = false;
+    addSheet(dashing, playerDashingTexture);
+
+    PlayerAnimationClip& attacking =
+        playerAnimationClips[PlayerStateIndex(PlayerState::Attacking)];
+    attacking.frameDuration = 0.05f;
+    attacking.loop = false;
+    addSheet(attacking, playerAttack1Texture);
+    addSheet(attacking, playerAttack2Texture);
+    addSheet(attacking, playerAttack3Texture);
+    addSheet(attacking, playerAttack4Texture);
+
+    PlayerAnimationClip& hurt =
+        playerAnimationClips[PlayerStateIndex(PlayerState::Hurt)];
+    hurt.frameDuration = 0.08f;
+    hurt.loop = false;
+    addSheet(hurt, playerHurt1Texture);
+    addSheet(hurt, playerHurt2Texture);
+}
+
+const PlayerAnimationClip& Game::GetPlayerAnimationClip(
+    PlayerState state) const
+{
+    return playerAnimationClips[PlayerStateIndex(state)];
+}
+
+int Game::GetPlayerAnimationFrameCount(
+    PlayerState state) const
+{
+    return GetPlayerAnimationClip(state).GetFrameCount();
+}
+
+float Game::GetPlayerAnimationDuration(
+    PlayerState state) const
+{
+    return GetPlayerAnimationClip(state).GetDuration();
+}
+
+PlayerState Game::ChoosePlayerAnimationState() const
+{
+    if (player.IsHurt)
+    {
+        return PlayerState::Hurt;
+    }
+
+    if (player.IsAttacking)
+    {
+        return PlayerState::Attacking;
+    }
+
+    if (player.IsDashing)
+    {
+        return PlayerState::Dashing;
+    }
+
+    if (player.State == PlayerState::Landing &&
+        !player.IsAnimationFinished())
+    {
+        return PlayerState::Landing;
+    }
+
+    if (player.JustLanded)
+    {
+        return PlayerState::Landing;
+    }
+
+    if (!player.IsGrounded && player.Velocity.y < -1.0f)
+    {
+        return PlayerState::Jumping;
+    }
+
+    if (!player.IsGrounded && player.Velocity.y > 1.0f)
+    {
+        return PlayerState::Falling;
+    }
+
+    if (player.IsGrounded && player.IsMoving)
+    {
+        return PlayerState::Running;
+    }
+
+    return PlayerState::Idle;
+}
+
+void Game::ApplyPlayerAnimationState(
+    float deltaTime)
+{
+    const PlayerState nextState =
+        ChoosePlayerAnimationState();
+
+    const PlayerAnimationClip& clip =
+        GetPlayerAnimationClip(nextState);
+
+    player.SetAnimationState(
+        nextState,
+        clip.GetFrameCount(),
+        clip.frameDuration,
+        clip.loop);
+
+    player.UpdateAnimation(deltaTime);
+}
+
+const Texture* Game::GetCurrentPlayerTexture(
+    glm::vec2& uvOffset,
+    glm::vec2& uvScale) const
+{
+    const PlayerAnimationClip& clip =
+        GetPlayerAnimationClip(player.State);
+
+    int frameIndex = player.currentFrame;
+
+    for (const PlayerAnimationSheet& sheet : clip.sheets)
+    {
+        if (sheet.texture == nullptr ||
+            sheet.frameCount <= 0)
+        {
+            continue;
+        }
+
+        if (frameIndex < sheet.frameCount)
+        {
+            const float frameWidthUV =
+                1.0f / static_cast<float>(sheet.frameCount);
+
+            if (player.FacingRight)
+            {
+                uvOffset = glm::vec2(
+                    static_cast<float>(frameIndex) * frameWidthUV,
+                    0.0f);
+
+                uvScale = glm::vec2(
+                    frameWidthUV,
+                    1.0f);
+            }
+            else
+            {
+                uvOffset = glm::vec2(
+                    static_cast<float>(frameIndex + 1) * frameWidthUV,
+                    0.0f);
+
+                uvScale = glm::vec2(
+                    -frameWidthUV,
+                    1.0f);
+            }
+
+            return sheet.texture;
+        }
+
+        frameIndex -= sheet.frameCount;
+    }
+
+    uvOffset = glm::vec2(0.0f);
+    uvScale = glm::vec2(
+        player.FacingRight ? 1.0f : -1.0f,
+        1.0f);
+
+    return nullptr;
 }
 
 //--------------------------------------------------
@@ -473,53 +793,109 @@ std::vector<AABB> Game::BuildSolids() const
 
 void Game::HandleKeyboardInput(float deltaTime)
 {
-    player.IsMoving = false;
-    player.Velocity.x = 0.0f;
+    // Input only SETS Elsa's velocity / requests a jump.
+    // The position update, gravity and collision all happen
+    // in Update(), which is why deltaTime is unused here.
+    (void)deltaTime;
 
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    //--------------------------------------------------
+    // Horizontal movement (A / D or Left / Right arrows)
+    //--------------------------------------------------
+
+    bool moveLeft =
+        glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ||
+        glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS;
+
+    bool moveRight =
+        glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS ||
+        glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS;
+
+    player.Velocity.x = 0.0f;
+    player.IsMoving = false;
+
+    if (moveLeft)
     {
         player.Velocity.x = -player.Speed;
         player.IsMoving = true;
+        player.FacingRight = false;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if (moveRight)
     {
         player.Velocity.x = player.Speed;
         player.IsMoving = true;
+        player.FacingRight = true;
     }
 
-    glm::vec2 desired =
-        player.Position + player.Velocity * deltaTime;
-
-    std::vector<AABB> solids = BuildSolids();
-
     //--------------------------------------------------
-    // Elsa's sprite quad is far wider than her artwork,
-    // so collision uses a narrow hitbox inside the quad.
-    // We resolve the HITBOX, then convert back to the
-    // sprite position by removing the same offset.
+    // Jump (Space)
+    //
+    // Edge-triggered: jump only on the frame the key goes
+    // from up to down, and only while grounded. This stops
+    // a held key or a mid-air tap from re-jumping.
     //--------------------------------------------------
 
-    const float PLAYER_FRAC_X = 0.22f;
-    const float PLAYER_FRAC_Y = 0.85f;
+    bool jumpKeyDown =
+        glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
 
-    AABB oldBox = Collision::MakeBox(
-        player.Position, player.Size,
-        PLAYER_FRAC_X, PLAYER_FRAC_Y, true);
+    bool jumpPressedThisFrame =
+        jumpKeyDown && !jumpKeyHeldLastFrame;
 
-    AABB desiredBox = Collision::MakeBox(
-        desired, player.Size,
-        PLAYER_FRAC_X, PLAYER_FRAC_Y, true);
+    jumpKeyHeldLastFrame = jumpKeyDown;
 
-    glm::vec2 offset = oldBox.position - player.Position;
+    if (jumpPressedThisFrame && player.IsGrounded)
+    {
+        player.Velocity.y = -player.JumpStrength;
+        player.IsGrounded = false;
+    }
 
-    glm::vec2 resolvedBox = Collision::ResolveMovement(
-        oldBox.position,
-        desiredBox.position,
-        oldBox.size,
-        solids);
+    //--------------------------------------------------
+    // Dash (Left Shift / Right Shift)
+    //--------------------------------------------------
 
-    player.Position = resolvedBox - offset;
+    bool dashKeyDown =
+        glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+        glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+
+    bool dashPressedThisFrame =
+        dashKeyDown && !dashKeyHeldLastFrame;
+
+    dashKeyHeldLastFrame = dashKeyDown;
+
+    if (dashPressedThisFrame && !player.IsDashing)
+    {
+        player.StartDash(
+            GetPlayerAnimationDuration(PlayerState::Dashing));
+    }
+
+    if (player.IsDashing)
+    {
+        const float dashDirection =
+            player.FacingRight ? 1.0f : -1.0f;
+
+        player.Velocity.x =
+            dashDirection * DASH_SPEED;
+
+        player.IsMoving = true;
+    }
+
+    //--------------------------------------------------
+    // Attack (J)
+    //--------------------------------------------------
+
+    bool attackKeyDown =
+        glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS;
+
+    bool attackPressedThisFrame =
+        attackKeyDown && !attackKeyHeldLastFrame;
+
+    attackKeyHeldLastFrame = attackKeyDown;
+
+    if (attackPressedThisFrame && !player.IsAttacking)
+    {
+        player.StartAttack(
+            GetPlayerAnimationDuration(PlayerState::Attacking));
+    }
 }
 
 //--------------------------------------------------
@@ -529,7 +905,99 @@ void Game::HandleKeyboardInput(float deltaTime)
 void Game::Update(
     float deltaTime)
 {
-    player.UpdateAnimation(deltaTime);
+    const bool wasGrounded =
+        player.IsGrounded;
+
+    //--------------------------------------------------
+    // 1. Gravity
+    //
+    // Each frame gravity increases Elsa's downward
+    // (positive-Y) velocity. We cap it at MaxFallSpeed so
+    // she can't accelerate without limit.
+    //--------------------------------------------------
+
+    player.Velocity.y += player.Gravity * deltaTime;
+
+    if (player.Velocity.y > player.MaxFallSpeed)
+    {
+        player.Velocity.y = player.MaxFallSpeed;
+    }
+
+    //--------------------------------------------------
+    // 2. Horizontal movement + wall collision
+    //
+    // Move on X only, then resolve against the solids so
+    // Elsa can't walk through the trees or the rock block.
+    // (Vertical is handled separately below so she slides
+    // along walls instead of being snapped upward.)
+    //--------------------------------------------------
+
+    std::vector<AABB> solids = BuildSolids();
+
+    const float PLAYER_FRAC_X = 0.22f;
+    const float PLAYER_FRAC_Y = 0.85f;
+
+    glm::vec2 desiredX(
+        player.Position.x + player.Velocity.x * deltaTime,
+        player.Position.y);
+
+    AABB oldBox = Collision::MakeBox(
+        player.Position, player.Size,
+        PLAYER_FRAC_X, PLAYER_FRAC_Y, true);
+
+    AABB desiredBoxX = Collision::MakeBox(
+        desiredX, player.Size,
+        PLAYER_FRAC_X, PLAYER_FRAC_Y, true);
+
+    glm::vec2 offset = oldBox.position - player.Position;
+
+    glm::vec2 resolvedX = Collision::ResolveMovement(
+        oldBox.position,
+        desiredBoxX.position,
+        oldBox.size,
+        solids);
+
+    player.Position = resolvedX - offset;
+
+    //--------------------------------------------------
+    // 3. Vertical movement + landing on the ground
+    //
+    // Apply the (gravity-affected) vertical velocity, then
+    // test Elsa's feet against the ground surface. If her
+    // feet reach it, snap them onto it, stop the fall, and
+    // mark her grounded.
+    //
+    // NOTE (Phase 3): this uses one flat ground line. In
+    // Phase 4 we replace it with real per-object collision
+    // so she can also stand ON the platforms.
+    //--------------------------------------------------
+
+    const float groundLevelY = 658.0f;   // top of the grass strip
+
+    player.Position.y += player.Velocity.y * deltaTime;
+
+    float feetY = player.Position.y + player.Size.y;
+
+    if (feetY >= groundLevelY)
+    {
+        player.Position.y = groundLevelY - player.Size.y;
+        player.Velocity.y = 0.0f;
+        player.IsGrounded = true;
+    }
+    else
+    {
+        player.IsGrounded = false;
+    }
+
+    player.JustLanded =
+        !wasGrounded && player.IsGrounded;
+
+    //--------------------------------------------------
+    // 4. Animation
+    //--------------------------------------------------
+
+    ApplyPlayerAnimationState(deltaTime);
+    player.UpdateActionTimers(deltaTime);
 }
 
 //--------------------------------------------------
@@ -605,26 +1073,26 @@ void Game::Render()
     // Player
     //--------------------------------------------------
 
-    glm::vec2 playerUVScale(
-        1.0f / static_cast<float>(player.FrameCount),
-        1.0f
-    );
+    glm::vec2 playerUVOffset(0.0f);
+    glm::vec2 playerUVScale(1.0f);
 
-    glm::vec2 playerUVOffset(
-        static_cast<float>(player.CurrentFrame)
-        * playerUVScale.x,
-        0.0f
-    );
+    const Texture* currentPlayerTexture =
+        GetCurrentPlayerTexture(
+            playerUVOffset,
+            playerUVScale);
 
-    spriteRenderer.DrawSprite(
-        playerTexture.GetID(),
-        player.Position,
-        player.Size,
-        0.0f,
-        glm::vec4(1.0f),
-        playerUVOffset,
-        playerUVScale
-    );
+    if (currentPlayerTexture != nullptr)
+    {
+        spriteRenderer.DrawSprite(
+            currentPlayerTexture->GetID(),
+            player.Position,
+            player.Size,
+            0.0f,
+            glm::vec4(1.0f),
+            playerUVOffset,
+            playerUVScale
+        );
+    }
 }
 
 //--------------------------------------------------
@@ -632,13 +1100,11 @@ void Game::Render()
 //--------------------------------------------------
 
 void Game::Shutdown()
-{
-}
+{}
 
 //--------------------------------------------------
 // Destructor
 //--------------------------------------------------
 
 Game::~Game()
-{
-}
+{}

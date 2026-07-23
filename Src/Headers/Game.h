@@ -3,6 +3,7 @@
 
 #include <glew.h>
 #include <glfw3.h>
+#include <array>
 #include <vector>
 
 #include "Shader.h"
@@ -24,6 +25,22 @@ struct WorldSprite
     // Trees draw before the grass cap so their trunk
     // base/roots sit behind it instead of on top.
     bool isTree = false;
+};
+
+struct PlayerAnimationSheet
+{
+    Texture* texture = nullptr;
+    int frameCount = 0;
+};
+
+struct PlayerAnimationClip
+{
+    std::vector<PlayerAnimationSheet> sheets;
+    float frameDuration = 0.12f;
+    bool loop = true;
+
+    int GetFrameCount() const;
+    float GetDuration() const;
 };
 
 class Game
@@ -48,7 +65,23 @@ private:
 
     Texture backgroundTexture;
 
-    Texture playerTexture;
+    Texture playerIdle1Texture;
+    Texture playerIdle2Texture;
+    Texture playerWalking1Texture;
+    Texture playerWalking2Texture;
+    Texture playerJumpTexture;
+    Texture playerFallTexture;
+    Texture playerLanding1Texture;
+    Texture playerLanding2Texture;
+    Texture playerDashingTexture;
+    Texture playerAttack1Texture;
+    Texture playerAttack2Texture;
+    Texture playerAttack3Texture;
+    Texture playerAttack4Texture;
+    Texture playerHurt1Texture;
+    Texture playerHurt2Texture;
+
+    std::array<PlayerAnimationClip, 8> playerAnimationClips;
 
     Texture tilesetTexture;     // Platforms
     Texture objectsTexture;     // Trees, chest, bushes, etc.
@@ -80,10 +113,42 @@ private:
     // Input
     //--------------------------------------------------
 
+    // Remembers whether the jump key was held last frame,
+    // so holding it down can't trigger repeated jumps.
+    bool jumpKeyHeldLastFrame = false;
+    bool dashKeyHeldLastFrame = false;
+    bool attackKeyHeldLastFrame = false;
+
     void HandleKeyboardInput(
         float deltaTime);
+
     // helper function
     std::vector<AABB> BuildSolids() const;
+
+    bool LoadPlayerAnimationTexture(
+        Texture& texture,
+        const char* filePath);
+
+    void BuildPlayerAnimationClips();
+
+    const PlayerAnimationClip& GetPlayerAnimationClip(
+        PlayerState state) const;
+
+    int GetPlayerAnimationFrameCount(
+        PlayerState state) const;
+
+    float GetPlayerAnimationDuration(
+        PlayerState state) const;
+
+    PlayerState ChoosePlayerAnimationState() const;
+
+    void ApplyPlayerAnimationState(
+        float deltaTime);
+
+    const Texture* GetCurrentPlayerTexture(
+        glm::vec2& uvOffset,
+        glm::vec2& uvScale) const;
+
 public:
 
     //--------------------------------------------------

@@ -1,6 +1,8 @@
 // player.cpp
 #include "Headers/Player.h"
 
+#include <algorithm>
+
 Player::Player(
     glm::vec2 position,
     glm::vec2 size,
@@ -10,29 +12,141 @@ Player::Player(
     Size(size),
     Velocity(0.0f),
     Speed(speed),
-    CurrentFrame(0),
-    FrameCount(4),
-    AnimationTimer(0.0f),
-    AnimationSpeed(0.12f),
+    JumpStrength(800.0f),
+    Gravity(2000.0f),
+    MaxFallSpeed(1200.0f),
+    IsGrounded(false),
+    FacingRight(true),
+    JustLanded(false),
+    IsDashing(false),
+    IsAttacking(false),
+    IsHurt(false),
+    DashTimer(0.0f),
+    AttackTimer(0.0f),
+    HurtTimer(0.0f),
+    State(PlayerState::Idle),
+    animationTimer(0.0f),
+    frameDuration(0.12f),
+    currentFrame(0),
+    frameCount(1),
+    animationLoops(true),
+    animationFinished(false),
     IsMoving(false)
 {}
 
-void Player::UpdateAnimation(float deltaTime)
+void Player::SetAnimationState(
+    PlayerState newState,
+    int newFrameCount,
+    float newFrameDuration,
+    bool shouldLoop)
 {
-    if (!IsMoving)
+    newFrameCount = std::max(1, newFrameCount);
+
+    if (State == newState &&
+        frameCount == newFrameCount &&
+        frameDuration == newFrameDuration &&
+        animationLoops == shouldLoop)
     {
-        CurrentFrame = 0;
-        AnimationTimer = 0.0f;
         return;
     }
 
-    AnimationTimer += deltaTime;
+    State = newState;
+    frameCount = newFrameCount;
+    frameDuration = newFrameDuration;
+    animationLoops = shouldLoop;
 
-    while (AnimationTimer >= AnimationSpeed)
+    currentFrame = 0;
+    animationTimer = 0.0f;
+    animationFinished = frameCount <= 1;
+}
+
+void Player::UpdateAnimation(float deltaTime)
+{
+    if (frameCount <= 1 ||
+        frameDuration <= 0.0f ||
+        animationFinished)
     {
-        AnimationTimer -= AnimationSpeed;
+        return;
+    }
 
-        CurrentFrame =
-            (CurrentFrame + 1) % FrameCount;
+    animationTimer += deltaTime;
+
+    while (animationTimer >= frameDuration)
+    {
+        animationTimer -= frameDuration;
+
+        if (currentFrame < frameCount - 1)
+        {
+            ++currentFrame;
+        }
+        else if (animationLoops)
+        {
+            currentFrame = 0;
+        }
+        else
+        {
+            animationFinished = true;
+            animationTimer = 0.0f;
+            break;
+        }
+    }
+}
+
+bool Player::IsAnimationFinished() const
+{
+    return animationFinished;
+}
+
+void Player::StartDash(float duration)
+{
+    IsDashing = true;
+    DashTimer = std::max(0.0f, duration);
+}
+
+void Player::StartAttack(float duration)
+{
+    IsAttacking = true;
+    AttackTimer = std::max(0.0f, duration);
+}
+
+void Player::StartHurt(float duration)
+{
+    IsHurt = true;
+    HurtTimer = std::max(0.0f, duration);
+}
+
+void Player::UpdateActionTimers(float deltaTime)
+{
+    if (IsDashing)
+    {
+        DashTimer -= deltaTime;
+
+        if (DashTimer <= 0.0f)
+        {
+            IsDashing = false;
+            DashTimer = 0.0f;
+        }
+    }
+
+    if (IsAttacking)
+    {
+        AttackTimer -= deltaTime;
+
+        if (AttackTimer <= 0.0f)
+        {
+            IsAttacking = false;
+            AttackTimer = 0.0f;
+        }
+    }
+
+    if (IsHurt)
+    {
+        HurtTimer -= deltaTime;
+
+        if (HurtTimer <= 0.0f)
+        {
+            IsHurt = false;
+            HurtTimer = 0.0f;
+        }
     }
 }
